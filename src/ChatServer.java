@@ -71,7 +71,8 @@ public class ChatServer {
 				clientInput.writeUTF(str);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				clients.remove(this);
+				//e.printStackTrace();
 			}
 		}
 		

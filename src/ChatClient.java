@@ -34,15 +34,22 @@ public class ChatClient extends Frame {
 		add(chatPannel,BorderLayout.NORTH);
 		pack();
 		input.addActionListener(new inputListener());
-		addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				disconnect();
-				System.exit(0);
-			}
-		});
 		connect();
 		clientThread = new Thread(new ThreadRec(clientSocket));
 		clientThread.start();
+		this.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				System.out.println("客户端正在尝试关闭");
+				try {
+					disconnect();
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					//e1.printStackTrace();
+				} finally {
+					System.exit(0);
+				}
+			}
+		});
 	}
 	
 	public void connect() {
@@ -50,31 +57,24 @@ public class ChatClient extends Frame {
 			clientSocket = new Socket("127.0.0.1",8081);
 			clientOutput = new DataOutputStream(clientSocket.getOutputStream());
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	public void disconnect() {
+	public void disconnect() throws Exception {
+		System.out.println("进入disconnect函数");
 		try {
 			connect = false;
-			try {
-				clientThread.join();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} finally {
-				clientOutput.close();
-				clientInput.close();
-				clientSocket.close();
-			}
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			clientThread.join(500);
+			System.out.println("线程合并结束");
+		} catch (InterruptedException e) {
+			//e.printStackTrace();
+		} finally {
+			if(clientOutput != null) clientOutput.close();
+			if(clientInput != null) clientInput.close();
+			if(clientSocket != null) clientSocket.close();
 		}
 	}
 	
@@ -84,7 +84,6 @@ public class ChatClient extends Frame {
 			clientOutput.flush();
 			//clientOutput.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -107,21 +106,27 @@ public class ChatClient extends Frame {
 			try {
 				clientInput = new DataInputStream(s.getInputStream());
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		
 		public void run() {
+			System.out.println("线程开始");
 			while(connect) {
 				try {
+					System.out.println("线程进行中");
 					String str = clientInput.readUTF();
 					System.out.println(str);
 					chatPannel.setText(chatPannel.getText() + str + "\n");
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					//e.printStackTrace();
-					
+					try {
+						clientInput.close();
+					} catch (IOException e1) {
+						
+					} finally {
+						connect = false;
+					}
 				}
 			}	
 		}
