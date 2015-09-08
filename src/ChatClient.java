@@ -14,7 +14,8 @@ public class ChatClient extends Frame {
 	private Socket clientSocket = null;
 	private DataOutputStream clientOutput = null;
 	private DataInputStream clientInput = null;
-	
+	protected boolean connect = false;
+	private Thread clientThread= null;
 	ChatClient(String t) {
 		super(t);
 	}
@@ -40,7 +41,8 @@ public class ChatClient extends Frame {
 			}
 		});
 		connect();
-		new Thread(new ThreadRec(clientSocket)).start();;
+		clientThread = new Thread(new ThreadRec(clientSocket));
+		clientThread.start();
 	}
 	
 	public void connect() {
@@ -58,9 +60,17 @@ public class ChatClient extends Frame {
 	
 	public void disconnect() {
 		try {
-			clientOutput.close();
-			clientSocket.close();
-			clientInput.close();
+			connect = false;
+			try {
+				clientThread.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				clientOutput.close();
+				clientInput.close();
+				clientSocket.close();
+			}
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -91,7 +101,6 @@ public class ChatClient extends Frame {
 	}
 
 	class ThreadRec implements Runnable {
-		protected boolean connect = false;
 		
 		ThreadRec(Socket s) {
 			connect = true;
